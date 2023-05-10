@@ -1,35 +1,42 @@
 from database import Database
 from game_database import Game
+
 db=Database("bolt://44.193.3.186:7687", "neo4j", "remainder-ground-turbine")
 db.drop_all()
 
 game_db = Game(db)
 
-# Cria dois jogadores
-game_db.create_player("João")
-game_db.create_player("Maria")
 
-# Cria uma partida com os jogadores criados
-players = ["João", "Maria"]
-game_db.create_match(players)
+# cria um novo jogador
+game_db.create_player("Guima")
+game_db.create_player("Kayky")
 
-# Registra o resultado da partida
-scores = {"João": 10, "Maria": 5}
-game_db.update_match_result(1, scores)
+# atualiza o nome do jogador com id 0 para "Bob"
+game_db.update_player(0, "Bob")
 
-# Busca informações sobre a partida
-match_info = game_db.get_match_info(1)
-print(match_info)
+# recupera todos os jogadores do banco de dados
+players = game_db.get_players()
+print("Jogadores cadastrados:")
+for player in players:
+    print(player["name"])
 
-# Busca o histórico de partidas do jogador "João"
-player_history = game_db.get_player_history("João")
-print(player_history)
+# cria uma partida com os jogadores com id 0 e 1 e com resultado "Empate"
+game_db.create_match([0, 1], "Empate")
 
-# Atualiza o nome do jogador "Maria"
-game_db.update_player_name(2, "Mariana")
+# recupera todas as partidas do banco de dados
+matches = game_db.get_matches()
+print("Partidas registradas:")
+for match in matches:
+    print("Resultado: {}".format(match["result"]))
 
-# Deleta a partida criada
-game_db.delete_match(1)
+# recupera todas as partidas em que o jogador com id 0 participou
+player_matches = game_db.get_player_matches(0)
+print("Partidas do jogador com id 0:")
+for match in player_matches:
+    print("Resultado: {}".format(match["result"]))
 
-# Fecha a conexão com o banco de dados
+# deleta o jogador com id 0
+game_db.delete_player(0)
+
+# fecha a conexão com o banco de dados
 db.close()
