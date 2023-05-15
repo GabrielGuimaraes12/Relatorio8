@@ -1,5 +1,5 @@
-class Game:
-    def _init_(self, database):
+class GameDatabase:
+    def __init__(self, database):
         self.db = database
 
     def create_player(self, name):
@@ -17,24 +17,6 @@ class Game:
         parameters = {"player_id": player_id}
         self.db.execute_query(query, parameters)
 
-    def create_match(self, players):
-        query = "CREATE (m:Match) RETURN id(m) as match_id"
-        result = self.db.execute_query(query)
-
-        match_id = result.single()["match_id"]
-
-        for player in players:
-            query = "MATCH (p:Player) WHERE id(p) = $player_id CREATE (m)-[:PARTICIPATED_BY]->(p)"
-            parameters = {"match_id": match_id, "player_id": player["id"]}
-            self.db.execute_query(query, parameters)
-
-        return match_id
-
-    def update_match(self, match_id, result):
-        query = "MATCH (m:Match) WHERE id(m) = $match_id SET m.result = $result"
-        parameters = {"match_id": match_id, "result": result}
-        self.db.execute_query(query, parameters)
-
     def get_players(self):
         query = "MATCH (p:Player) RETURN id(p) as id, p.name as name"
         result = self.db.execute_query(query)
@@ -46,26 +28,34 @@ class Game:
 
         return players
 
-    def get_match(self, match_id):
-        query = "MATCH (m:Match) WHERE id(m) = $match_id RETURN id(m) as id, m.result as result"
-        parameters = {"match_id": match_id}
-        result = self.db.execute_query(query, parameters)
+    def get_matches(self, id):
+        query = "MATCH (p:Player)<-[:POSSUI]-(m:Match) WHERE m.id = $id RETURN p.name AS name, m.result AS match_result"
+        parameters = {"id": id}
+        results = self.db.execute_query(query, parameters)
+        return [(result["name"], result["match_result"]) for result in results]
 
-        match = None
-        if result:
-            record = result.single()
-            match = {"id": record["id"], "result": record["result"]}
+    def get_player_matches(self, player_name):
+        query = "MATCH (p:Player)<-[:POSSUI]-(m:Match) WHERE p.name = $player_name RETURN m.result AS match_result"
+        parameters = {"player_name": player_name}
+        results = self.db.execute_query(query, parameters)
+        return [(result["match_result"]) for result in results]
 
-        return match
+    def update_match(self, id, new_result):
+        query = "MATCH (m:Match {id: $id}) SET m.result = $new_result"
+        parameters = {"id": id, "new_result": new_result}
+        self.db.execute_query(query, parameters)
 
-    def get_player_matches(self, player_id):
-        query = "MATCH (m:Match)-[:PARTICIPATED_BY]->(p:Player) WHERE id(p) = $player_id RETURN id(m) as id, m.result as result"
-        parameters = {"player_id": player_id}
-        result = self.db.execute_query(query, parameters)
+    def insert_match_player(self, match_id, player_names):
+        query = "MATCH (m:Match {id: $match_id}) MATCH (p:Player) WHERE p.name IN $player_names CREATE (m)-[:POSSUI]->(p)"
+        parameters = {"match_id": match_id, "player_names": player_names}
+        self.db.execute_query(query, parameters)
 
-        matches = []
-        for record in result:
-            match = {"id": record["id"], "result": record["result"]}
-            matches.append(match)
+    def delete_match(self, id):
+        query = "MATCH (m:Match {id: $id})-[:POSSUI]->(p:Player) DETACH DELETE m"
+        parameters = {"id": id}
+        self.db.execute_query(query, parameters)
 
-        return matches
+    def create_match(self, id, result):
+        query = "CREATE (:Match {id: $id, result: $result})"
+        parameters = {"id": id, "result": result}
+        self.db.execute_query(query, parameters)

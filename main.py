@@ -1,42 +1,51 @@
 from database import Database
-from game_database import Game
+from game_database import GameDatabase
 
-db=Database("bolt://44.193.3.186:7687", "neo4j", "remainder-ground-turbine")
+db=Database("bolt://44.204.103.222:7687", "neo4j", "jacket-slit-byte")
 db.drop_all()
 
-game_db = Game(db)
+game_db = GameDatabase(db)
 
-
-# cria um novo jogador
-game_db.create_player("Guima")
+# Criar um jogador
+game_db.create_player("Vitinho")
 game_db.create_player("Kayky")
+game_db.create_player("Luis")
+# Atualizar o nome de um jogador
+game_db.update_player(1, "Guima")
 
-# atualiza o nome do jogador com id 0 para "Bob"
-game_db.update_player(0, "Bob")
+# Deletar um jogador
+game_db.delete_player(2)
 
-# recupera todos os jogadores do banco de dados
+# Obter a lista de jogadores
 players = game_db.get_players()
-print("Jogadores cadastrados:")
+print("Players:")
 for player in players:
-    print(player["name"])
+    print(player)
+# Criar partidas
+game_db.create_match(1, "Guima Ganhou")
+game_db.create_match(2, "Kayky Ganhou")
+game_db.create_match(3, "Empate")
 
-# cria uma partida com os jogadores com id 0 e 1 e com resultado "Empate"
-game_db.create_match([0, 1], "Empate")
 
-# recupera todas as partidas do banco de dados
-matches = game_db.get_matches()
-print("Partidas registradas:")
-for match in matches:
-    print("Resultado: {}".format(match["result"]))
+game_db.insert_match_player(1, ["Kayky", "Guima"])
+game_db.insert_match_player(2, ["Kayky", "Luis"])
+game_db.insert_match_player(3, ["Guima", "Luis"])
 
-# recupera todas as partidas em que o jogador com id 0 participou
-player_matches = game_db.get_player_matches(0)
-print("Partidas do jogador com id 0:")
-for match in player_matches:
-    print("Resultado: {}".format(match["result"]))
+# Atualizando resultado da partida
+game_db.update_match(1, "Guima wins")
 
-# deleta o jogador com id 0
-game_db.delete_player(0)
+# Deletando uma partida
+game_db.delete_match(3)
 
-# fecha a conexão com o banco de dados
+# Mostra partida selecionada
+print("Partida:")
+print(game_db.get_matches(2))
+
+# Imprime historico de partidas de um jogador
+
+print("Partidas:")
+print(game_db.get_player_matches("Kayky"))
+
+
+# Fechar a conexão com o banco de dados Neo4j
 db.close()
